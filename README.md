@@ -32,11 +32,7 @@ This repository is configured as a Render **Web Service**, not a Background Work
    - `GITHUB_APP_ID`
    - `GITHUB_PRIVATE_KEY`
    - `GITHUB_INSTALLATION_ID`
-   - `WEBHOOK_SECRET`
-   - `WEBHOOK_URL`
-3. Set `WEBHOOK_URL` to the full public service URL followed by `/telegram`, for example `https://YOUR-SERVICE.onrender.com/telegram`.
-4. Set `WEBHOOK_SECRET` to a random 1-256 character value using only letters, numbers, underscores, or hyphens.
-5. Save the environment variables and deploy. On startup, the app registers the webhook with Telegram.
+3. Render automatically generates `WEBHOOK_SECRET` from the Blueprint. The app detects the public service URL through Render's `RENDER_EXTERNAL_URL` variable and registers `https://YOUR-SERVICE.onrender.com/telegram` with Telegram at startup. You do not need to enter `WEBHOOK_URL` manually.
 
 Also set `GITHUB_OWNER=Zuno-inc` and `GITHUB_REPO=Zuno` (already supplied by the Blueprint), and optionally `PROJECT_URL`.
 
