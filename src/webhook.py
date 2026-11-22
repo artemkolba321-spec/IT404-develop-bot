@@ -1,3 +1,4 @@
+import hashlib
 import hmac
 import logging
 import os
@@ -16,14 +17,17 @@ service_url = os.getenv("RENDER_EXTERNAL_URL", "").rstrip("/")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "").strip() or (
     f"{service_url}/telegram" if service_url else ""
 )
-WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "").strip()
-
+raw_webhook_secret = os.getenv("WEBHOOK_SECRET", "")
 if not WEBHOOK_URL:
     raise RuntimeError(
         "Could not determine webhook URL. Set WEBHOOK_URL or deploy as a Render Web Service."
     )
-if not WEBHOOK_SECRET:
+if not raw_webhook_secret:
     raise RuntimeError("Missing required environment variable: WEBHOOK_SECRET")
+
+# Telegram accepts only URL-safe characters in secret_token. Hashing also
+# normalizes any generated secret into a fixed-length, valid token.
+WEBHOOK_SECRET = hashlib.sha256(raw_webhook_secret.encode("utf-8")).hexdigest()
 
 # Register this Render service as the Telegram webhook on startup.
 bot.set_webhook(url=WEBHOOK_URL, secret_token=WEBHOOK_SECRET)
