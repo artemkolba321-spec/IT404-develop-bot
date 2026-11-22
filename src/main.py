@@ -160,18 +160,28 @@ def approve(message):
     try:
         result = invite_read_only_collaborator(request["github_username"])
         db.set_status(request_id, "approved", message.from_user.id, invitation_sent=True)
-        bot.send_message(
-            message.chat.id,
-            f"GitHub accepted the invitation request for @{request['github_username']}. "
-            f"Permission requested: pull (read-only). HTTP {result['status']}.",
-        )
-        try:
-            bot.send_message(
-                request["telegram_id"],
-                f"Your request was approved. GitHub has sent an invitation to "
-                f"@{request['github_username']}. Please accept it on GitHub.\n\n"
-                "You have read-only access; submit changes through Pull Requests.",
+        if result["invitation_created"]:
+            admin_text = (
+                f"GitHub invitation created for @{request['github_username']}. "
+                f"Permission requested: pull (read-only). HTTP {result['status']}."
             )
+            user_text = (
+                f"Your request was approved. GitHub has sent an invitation to "
+                f"@{request['github_username']}. Please accept it on GitHub.\\n\\n"
+                "You have read-only access; submit changes through Pull Requests."
+            )
+        else:
+            admin_text = (
+                f"@{request['github_username']} already has repository access. "
+                "No new invitation was needed."
+            )
+            user_text = (
+                f"Your request was approved. The GitHub account "
+                f"@{request['github_username']} already has repository access."
+            )
+        bot.send_message(message.chat.id, admin_text)
+        try:
+            bot.send_message(request["telegram_id"], user_text)
         except Exception:
             log.exception("Could not notify requester for request #%s", request_id)
     except Exception as exc:
