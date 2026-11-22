@@ -1,4 +1,7 @@
-node_modules/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
 .env
 .env.*
 !.env.example
@@ -6,5 +9,4 @@ data/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
-npm-debug.log*
 .DS_Store
