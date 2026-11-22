@@ -3,13 +3,14 @@ import os
 import re
 import time
 
-import telebot
 from dotenv import load_dotenv
+
+load_dotenv()
+
+import telebot
 
 from src import database as db
 from src.github_api import invite_read_only_collaborator
-
-load_dotenv()
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
