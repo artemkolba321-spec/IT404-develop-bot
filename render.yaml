@@ -5,16 +5,10 @@ services:
     plan: starter
     buildCommand: pip install -r requirements.txt
     startCommand: python -m src.main
-    disk:
-      name: it404-bot-data
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.11
       - key: BOT_TOKEN
-        sync: false
-      - key: ADMIN_TELEGRAM_IDS
         sync: false
       - key: GITHUB_APP_ID
         sync: false
@@ -26,7 +20,5 @@ services:
         value: Zuno-inc
       - key: GITHUB_REPO
         value: Zuno
-      - key: DATABASE_PATH
-        value: /var/data/requests.sqlite
       - key: PROJECT_URL
         value: https://zuno-com.onrender.com/
