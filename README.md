@@ -2,7 +2,7 @@
 
 A lightweight Python Telegram bot using **TeleBot (pyTelegramBotAPI)**. A user starts the bot, sends their GitHub username, and the bot automatically requests read-only access to the private `Zuno-inc/Zuno` repository through a GitHub App.
 
-## Flow
+## User flow
 
 1. The user sends `/start`.
 2. The bot greets them and asks for their GitHub username.
@@ -22,6 +22,38 @@ The GitHub App needs **Repository permissions → Administration: Read and write
 
 Private repository forking must be enabled in the Zuno organization/repository settings if contributors are expected to fork privately and open Pull Requests.
 
+## Render deployment (free Web Service + Telegram webhook)
+
+This repository is configured as a Render **Web Service**, not a Background Worker. Telegram sends updates to the HTTPS webhook endpoint at `/telegram`. The service exposes `/healthz` for health checks.
+
+1. In Render, choose **New → Blueprint**, connect this GitHub repository, and apply the `render.yaml` blueprint.
+2. In the service's Environment settings, add the required secrets:
+   - `BOT_TOKEN`
+   - `GITHUB_APP_ID`
+   - `GITHUB_PRIVATE_KEY`
+   - `GITHUB_INSTALLATION_ID`
+   - `WEBHOOK_SECRET`
+   - `WEBHOOK_URL`
+3. Set `WEBHOOK_URL` to the full public service URL followed by `/telegram`, for example `https://YOUR-SERVICE.onrender.com/telegram`.
+4. Set `WEBHOOK_SECRET` to a random 1-256 character value using only letters, numbers, underscores, or hyphens.
+5. Save the environment variables and deploy. On startup, the app registers the webhook with Telegram.
+
+Also set `GITHUB_OWNER=Zuno-inc` and `GITHUB_REPO=Zuno` (already supplied by the Blueprint), and optionally `PROJECT_URL`.
+
+**Free-tier caveat:** Render's free Web Services can spin down after inactivity and may take time to wake up. Telegram will retry webhook deliveries when it does not receive a successful response, but delivery can be delayed. This is not an always-on service.
+
+Do not run a second polling instance of this bot while the webhook is active. Never paste secrets into chat or commit them to GitHub.
+
+## Local development
+
+Install dependencies with `pip install -r requirements.txt`. To run the existing long-polling entry point locally, set the Telegram and GitHub App variables in your local `.env` file and run:
+
+```bash
+python -m src.main
+```
+
+For local webhook testing, expose the Flask app in `src.webhook:app` through an HTTPS tunnel and set `WEBHOOK_URL` and `WEBHOOK_SECRET` accordingly.
+
 ## Requirements
 
 - Python 3.11+
@@ -29,30 +61,4 @@ Private repository forking must be enabled in the Zuno organization/repository s
 - GitHub App installed on `Zuno-inc/Zuno`
 - GitHub App ID, private key, and installation ID
 
-## Local setup
-
-```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
-pip install -r requirements.txt
-cp .env.example .env
-python -m src.main
-```
-
-The bot uses Telegram long polling; no webhook or public web service is needed.
-
-## Render deployment
-
-Deploy as a **Background Worker**. Set these environment variables in Render:
-
-- `BOT_TOKEN`
-- `GITHUB_APP_ID`
-- `GITHUB_PRIVATE_KEY`
-- `GITHUB_INSTALLATION_ID`
-- `GITHUB_OWNER=Zuno-inc`
-- `GITHUB_REPO=Zuno`
-- `PROJECT_URL=https://zuno-com.onrender.com/` (optional)
-
-No persistent disk or database is required. The worker uses memory only.
-
-Never commit real tokens or private keys. For `GITHUB_PRIVATE_KEY`, use a multiline PEM value or literal `\\n` line breaks; the application converts literal `\\n` sequences to newlines.
+For `GITHUB_PRIVATE_KEY`, use a multiline PEM value or literal `\\n` line breaks; the application converts literal `\\n` sequences to newlines.
