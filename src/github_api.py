@@ -1,5 +1,6 @@
 import os
 import time
+
 import jwt
 import requests
 
@@ -52,4 +53,9 @@ def invite_read_only_collaborator(username):
         except ValueError:
             detail = response.text
         raise RuntimeError(f"GitHub API returned HTTP {response.status_code}: {detail}")
-    return {\n        "status": response.status_code,\n        "permission": "pull",\n        "invitation_created": response.status_code == 201,\n    }
+
+    return {
+        "status": response.status_code,
+        "permission": "pull",
+        "invitation_created": response.status_code == 201,
+    }
