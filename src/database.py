@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -7,12 +8,20 @@ DATABASE_PATH = os.getenv("DATABASE_PATH", "./data/requests.sqlite")
 Path(DATABASE_PATH).parent.mkdir(parents=True, exist_ok=True)
 
 
+@contextmanager
 def connect():
     connection = sqlite3.connect(DATABASE_PATH, timeout=30)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA journal_mode=WAL")
     connection.execute("PRAGMA foreign_keys=ON")
-    return connection
+    try:
+        yield connection
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
 
 
 def init_db():
