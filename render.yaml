@@ -1,17 +1,17 @@
 services:
   - type: worker
     name: it404-develop-bot
-    runtime: node
+    runtime: python
     plan: starter
-    buildCommand: npm install
-    startCommand: npm start
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m src.main
     disk:
       name: it404-bot-data
       mountPath: /var/data
       sizeGB: 1
     envVars:
-      - key: NODE_VERSION
-        value: 20
+      - key: PYTHON_VERSION
+        value: 3.11.11
       - key: BOT_TOKEN
         sync: false
       - key: ADMIN_TELEGRAM_IDS
