@@ -1,69 +1,58 @@
-# IT404 Develop Bot
+# Zuno Telegram Bot
 
-A Python Telegram bot using **TeleBot (pyTelegramBotAPI)** to manage requests for read-only access to the private `Zuno-inc/Zuno` GitHub repository.
+A lightweight Python Telegram bot using **TeleBot (pyTelegramBotAPI)**. A user starts the bot, sends their GitHub username, and the bot automatically requests read-only access to the private `Zuno-inc/Zuno` repository through a GitHub App.
 
-## Features
+## Flow
 
-- `/start`, `/help`, `/rules`
-- `/access`: collect a GitHub username and create a pending request
-- `/status`: show the user's latest request status
-- Maintainer-only `/pending`, `/approve ID`, and `/reject ID`
-- GitHub App invitations request **pull** permission only
-- SQLite storage using Python's built-in `sqlite3`
+1. The user sends `/start`.
+2. The bot greets them and asks for their GitHub username.
+3. The user sends the username.
+4. The bot calls GitHub and requests collaborator permission `pull`.
+5. The bot tells the user whether an invitation was created or access already exists.
 
-Requests are reviewed by a maintainer before an invitation is sent. The bot does not grant write or admin access.
+No application database, SQLite file, admin approval queue, or persistent request storage is used. The bot keeps only short-lived conversation state and rate-limit data in memory; this resets when the process restarts.
+
+## Important GitHub behavior
+
+When GitHub returns HTTP 201, it has created an invitation. The recipient must still accept that invitation in GitHub before repository access becomes active. HTTP 204 means the account already has access.
+
+The bot trusts the GitHub username supplied in Telegram. It does not verify that the Telegram user owns that GitHub account. Anyone who knows another person's GitHub username could submit it, so this fully automatic flow should only be used if that risk is acceptable.
+
+The GitHub App needs **Repository permissions → Administration: Read and write** for GitHub's collaborator invitation endpoint, even though this bot requests only `pull` access for each user. Install the App only on `Zuno-inc/Zuno`, not on all repositories. The resulting collaborator permission requested by the bot is read-only.
+
+Private repository forking must be enabled in the Zuno organization/repository settings if contributors are expected to fork privately and open Pull Requests.
 
 ## Requirements
 
 - Python 3.11+
-- A Telegram bot token from BotFather
-- A GitHub App installed on `Zuno-inc/Zuno`
-- GitHub App permission: **Repository permissions → Administration: Read and write**
-- The GitHub App installation ID
-- A Telegram numeric user ID in `ADMIN_TELEGRAM_IDS`
-
-The GitHub App permission is needed because GitHub's collaborator invitation endpoint is an administrative operation. The bot explicitly requests `permission: "pull"` for each invited user. Install the App on the Zuno repository only, not on all repositories.
+- Telegram bot token from BotFather
+- GitHub App installed on `Zuno-inc/Zuno`
+- GitHub App ID, private key, and installation ID
 
 ## Local setup
-
-1. Create and activate a virtual environment.
-2. Install dependencies.
-3. Copy `.env.example` to `.env` and fill in the values.
-4. Start the bot:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
 pip install -r requirements.txt
+cp .env.example .env
 python -m src.main
 ```
 
-The bot uses Telegram long polling, so no public webhook URL is required.
+The bot uses Telegram long polling; no webhook or public web service is needed.
 
 ## Render deployment
 
-Deploy this repository as a **Background Worker** (not a Web Service). The included `render.yaml` configures Python, dependency installation, startup, and a persistent disk.
-
-Set these environment variables in Render:
+Deploy as a **Background Worker**. Set these environment variables in Render:
 
 - `BOT_TOKEN`
-- `ADMIN_TELEGRAM_IDS`
 - `GITHUB_APP_ID`
 - `GITHUB_PRIVATE_KEY`
 - `GITHUB_INSTALLATION_ID`
 - `GITHUB_OWNER=Zuno-inc`
 - `GITHUB_REPO=Zuno`
-- `DATABASE_PATH=/var/data/requests.sqlite`
+- `PROJECT_URL=https://zuno-com.onrender.com/` (optional)
 
-The persistent disk is mounted at `/var/data`; SQLite data would otherwise be lost when the worker is redeployed or restarted.
+No persistent disk or database is required. The worker uses memory only.
 
-For `GITHUB_PRIVATE_KEY`, paste the PEM private key as a multiline value if Render supports it, or replace line breaks with literal `\\n`. The application converts literal `\\n` sequences back to line breaks.
-
-## Important security notes
-
-- Never put secrets in Git, chat messages, source code, or screenshots.
-- Restrict the GitHub App installation to `Zuno-inc/Zuno`.
-- Keep the bot administrator list short.
-- The GitHub username is supplied by the requester; this MVP does not prove Telegram-to-GitHub identity ownership. The named GitHub account must accept the invitation.
-- Private repository forking must be allowed by the Zuno organization/repository settings for contributors to fork privately and open PRs.
-- Review every Pull Request before merging.
+Never commit real tokens or private keys. For `GITHUB_PRIVATE_KEY`, use a multiline PEM value or literal `\\n` line breaks; the application converts literal `\\n` sequences to newlines.
